@@ -1,12 +1,3 @@
----
-title: Segment Anything Web
-emoji: 💻
-colorFrom: green
-colorTo: blue
-sdk: static
-pinned: false
-models:
- - Xenova/slimsam-77-uniform
----
+This is a fork of https://huggingface.co/spaces/Xenova/segment-anything-web, whose license is unclear.
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+It will eventually diverge to produce an interface/proof-of-concept for an image analysis platform.
