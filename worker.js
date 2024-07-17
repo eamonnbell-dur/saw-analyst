@@ -3,6 +3,18 @@ import { env, SamModel, AutoProcessor, RawImage, Tensor } from 'https://cdn.jsde
 // Since we will download the model from the Hugging Face Hub, we can skip the local model check
 env.allowLocalModels = false;
 
+async function getImageDigest(imageData) {
+    // Create a new digest using the SHA-256 algorithm
+    let digest = await crypto.subtle.digest('SHA-256', imageData);
+
+    // Convert the digest to a hexadecimal string
+    let hexDigest = Array.from(new Uint8Array(digest))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+    return hexDigest;
+}
+
 // We adopt the singleton pattern to enable lazy-loading of the model and processor.
 export class SegmentAnythingSingleton {
     static model_id = 'Xenova/slimsam-77-uniform';
@@ -30,6 +42,9 @@ let image_embeddings = null;
 let image_inputs = null;
 let ready = false;
 
+// Naive cache
+let cache = {};
+
 self.onmessage = async (e) => {
     const [model, processor] = await SegmentAnythingSingleton.getInstance();
     if (!ready) {
@@ -54,8 +69,24 @@ self.onmessage = async (e) => {
 
         // Read the image and recompute image embeddings
         const image = await RawImage.read(e.data.data);
-        image_inputs = await processor(image);
-        image_embeddings = await model.get_image_embeddings(image_inputs)
+
+        // Compute a SHA-256 digest
+        const image_digest = await getImageDigest(image.data);
+        
+        // Naive caching of image_embeddings
+        // TODO: Use Web Caching API as is used in Transformers.js
+        if (image_digest in cache){
+            image_inputs = cache[image_digest].image_inputs;
+            image_embeddings = cache[image_digest].image_embeddings;
+        } else {
+            image_inputs = await processor(image);
+            image_embeddings = await model.get_image_embeddings(image_inputs);
+
+            cache[image_digest] = {
+                image_inputs,
+                image_embeddings
+            }
+        }
 
         // Indicate that we have computed the image embeddings, and we are ready to accept decoding requests
         self.postMessage({
