@@ -20,7 +20,7 @@ let imageDataURI = null;
 
 // Constants
 const BASE_URL = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/';
-const EXAMPLE_URL = BASE_URL + 'corgi.jpg';
+const EXAMPLE_URL = 'https://cdm21066.contentdm.oclc.org/iiif/2/BDC:486/full/full/0/default.jpg';
 
 // Create a web worker so that the main (UI) thread is not blocked during inference.
 const worker = new Worker('worker.js', {
