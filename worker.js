@@ -1,4 +1,7 @@
-import { env, SamModel, AutoProcessor, RawImage, Tensor } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.14.0';
+// author: Xenova
+// source: https://huggingface.co/spaces/Xenova/segment-anything-web/blob/main/worker.js
+
+import { env, SamModel, AutoProcessor, RawImage, Tensor } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.5';
 
 // Since we will download the model from the Hugging Face Hub, we can skip the local model check
 env.allowLocalModels = false;
@@ -26,6 +29,8 @@ export class SegmentAnythingSingleton {
         if (!this.model) {
             this.model = SamModel.from_pretrained(this.model_id, {
                 quantized: this.quantized,
+                dtype: "fp16",
+                device: "webgpu",
             });
         }
         if (!this.processor) {
