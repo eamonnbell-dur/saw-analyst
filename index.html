@@ -12,31 +12,32 @@
 <body>
     <div id="app">
         <saw-stage></saw-stage>
+        <saw-stage></saw-stage>
     </div>
 
     <script>
         // Define your component
         Vue.component('saw-stage', {
             template: `
-            <div>
-            <h2>saw-analyst</h2>
-            <div id="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer" @contextmenu.prevent>
-                <label id="upload-button" for="upload" ref="uploadButton">
-                Click to upload image
-                <label id="example" @click="useExample">(or try example)</label>
-                </label>
-                <canvas id="mask-output" ref="maskCanvas"></canvas>
-            </div>
-            <label id="status" ref="statusLabel"></label>
-            <div id="controls">
-                <button @click="resetImage" ref="resetButton">Reset image</button>
-                <button @click="clearPointsAndMask" ref="clearButton">Clear points</button>
-                <button @click="cutMask" :disabled="isCutMaskDisabled">Cut mask</button>
-            </div>
-            <p id="information">
-                Left click = positive points, right click = negative points.
-            </p>
-            <input id="upload" type="file" accept="image/*" @change="handleUpload" />
+            <div class="saw-analyst">
+                <h2>saw-analyst</h2>
+                <div class="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer" @contextmenu.prevent>
+                    <label class="upload-button" :for="'upload-' + _uid" ref="uploadButton">
+                        Click to upload image
+                        <label class="example" @click="useExample">(or try example)</label>
+                    </label>
+                    <canvas class="mask-output" ref="maskCanvas"></canvas>
+                </div>
+                <label class="status" ref="statusLabel"></label>
+                <div class="controls">
+                    <button @click="resetImage" ref="resetButton">Reset image</button>
+                    <button @click="clearPointsAndMask" ref="clearButton">Clear points</button>
+                    <button @click="cutMask" :disabled="isCutMaskDisabled">Cut mask</button>
+                </div>
+                <p class="information">
+                    Left click = positive points, right click = negative points.
+                </p>
+                <input :id="'upload-' + _uid" type="file" accept="image/*" @change="handleUpload" />
             </div>
       `,
             data() {
@@ -51,6 +52,7 @@
                     worker: null,
                 };
             },
+
             mounted() {
 
                 const BASE_URL = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/';
@@ -64,14 +66,15 @@
                 this.cross.className = 'icon';
 
                 this.worker = new Worker('worker.js', { type: 'module' });
-                this.worker.addEventListener('message', this.handleWorkerMessage);
+                this.worker.onmessage = this.handleWorkerMessage;
 
             },
 
             beforeDestroy() {
-                this.worker.terminate();
+                if(this.worker){
+                    this.worker.terminate();
+                }
             },
-
 
             methods: {
                 resetImage() {
@@ -174,7 +177,7 @@
                 clearPointsAndMask() {
                     this.isMultiMaskMode = false;
                     this.lastPoints = null;
-                    document.querySelectorAll('.icon').forEach(e => e.remove());
+                    this.$refs.imageContainer.querySelectorAll('.icon').forEach(e => e.remove());
                     this.isCutMaskDisabled = true;
                     this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, this.$refs.maskCanvas.width, this.$refs.maskCanvas.height);
                 },

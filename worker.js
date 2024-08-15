@@ -6,6 +6,7 @@ import { env, SamModel, AutoProcessor, RawImage, Tensor } from 'https://cdn.jsde
 // Since we will download the model from the Hugging Face Hub, we can skip the local model check
 env.allowLocalModels = false;
 
+
 async function getImageDigest(imageData) {
     // Create a new digest using the SHA-256 algorithm
     let digest = await crypto.subtle.digest('SHA-256', imageData);
@@ -58,6 +59,7 @@ self.onmessage = async (e) => {
         self.postMessage({
             type: 'ready',
         });
+
     }
 
     const { type, data } = e.data;
