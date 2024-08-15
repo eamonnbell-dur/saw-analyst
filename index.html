@@ -11,8 +11,8 @@
 
 <body>
     <div id="app">
-        <saw-stage></saw-stage>
-        <saw-stage></saw-stage>
+        <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"></saw-stage>
+        <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:189/full/full/0/default.jpg"></saw-stage>
     </div>
 
     <script>
@@ -40,6 +40,12 @@
                 <input :id="'upload-' + _uid" type="file" accept="image/*" @change="handleUpload" />
             </div>
       `,
+            props: {
+                exampleUrl: {
+                    type: String,
+                    required: false
+                }
+            },
             data() {
                 return {
                     isCutMaskDisabled: true,
@@ -71,7 +77,7 @@
             },
 
             beforeDestroy() {
-                if(this.worker){
+                if (this.worker) {
                     this.worker.terminate();
                 }
             },
@@ -134,7 +140,7 @@
                 },
                 useExample(event) {
                     event.preventDefault();
-                    this.segment(EXAMPLE_URL);
+                    this.segment(this.exampleUrl);
                 },
                 addIcon({ point, label }) {
                     const icon = (label === 1 ? this.star : this.cross).cloneNode();
