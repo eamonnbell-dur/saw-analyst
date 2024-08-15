@@ -2,39 +2,277 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <link rel="stylesheet" href="index.css" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Transformers.js - Segment Anything</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue CDN Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
 </head>
 
 <body>
-    <h1>saw-analyst (Segment Anything Web Analyst)</h1>
-    <div id="container">
-        <label id="upload-button" for="upload">
-            <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#000"
-                    d="M3.5 24.3a3 3 0 0 1-1.9-.8c-.5-.5-.8-1.2-.8-1.9V2.9c0-.7.3-1.3.8-1.9.6-.5 1.2-.7 2-.7h18.6c.7 0 1.3.2 1.9.7.5.6.7 1.2.7 2v18.6c0 .7-.2 1.4-.7 1.9a3 3 0 0 1-2 .8H3.6Zm0-2.7h18.7V2.9H3.5v18.7Zm2.7-2.7h13.3c.3 0 .5 0 .6-.3v-.7l-3.7-5a.6.6 0 0 0-.6-.2c-.2 0-.4 0-.5.3l-3.5 4.6-2.4-3.3a.6.6 0 0 0-.6-.3c-.2 0-.4.1-.5.3l-2.7 3.6c-.1.2-.2.4 0 .7.1.2.3.3.6.3Z">
-                </path>
-            </svg>
-            Click to upload image
-            <label id="example">(or try example)</label>
-        </label>
-        <canvas id="mask-output"></canvas>
+    <div id="app">
+        <saw-stage></saw-stage>
     </div>
-    <label id="status"></label>
-    <div id="controls">
-        <button id="reset-image">Reset image</button>
-        <button id="clear-points">Clear points</button>
-        <button id="cut-mask" disabled>Cut mask</button>
-    </div>
-    <p id="information">
-        Left click = positive points, right click = negative points.
-    </p>
-    <input id="upload" type="file" accept="image/*" />
 
-    <script src="index.js" type="module"></script>
+    <script>
+        // Define your component
+        Vue.component('saw-stage', {
+            template: `
+            <div>
+            <h2>saw-analyst</h2>
+            <div id="container" ref="imageContainer">
+                <label id="upload-button" for="upload" ref="uploadButton">
+                Click to upload image
+                <label id="example" @click="useExample">(or try example)</label>
+                </label>
+                <canvas id="mask-output" ref="maskCanvas"></canvas>
+            </div>
+            <label id="status" ref="statusLabel"></label>
+            <div id="controls">
+                <button @click="resetImage" ref="resetButton">Reset image</button>
+                <button @click="clearPoints" ref="clearButton">Clear points</button>
+                <button @click="cutMask" :disabled="isCutMaskDisabled">Cut mask</button>
+            </div>
+            <p id="information">
+                Left click = positive points, right click = negative points.
+            </p>
+            <input id="upload" type="file" accept="image/*" @change="handleUpload" />
+            </div>
+      `,
+            data() {
+                return {
+                    isCutMaskDisabled: true,
+                    isEncoded: false,
+                    isMultiMaskMode: false,
+                    lastPoints: [],
+                    modelReady: false,
+                    isDecoding: false,
+                    imageDataURI: '',
+                    worker: null,
+                };
+            },
+            mounted() {
+                const BASE_URL = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/';
+
+                this.star = new Image();
+                this.star.src = BASE_URL + 'star-icon.png';
+                this.star.className = 'icon';
+
+                this.cross = new Image();
+                this.cross.src = BASE_URL + 'cross-icon.png';
+                this.cross.className = 'icon';
+
+                this.worker = new Worker('worker.js', { type: 'module' });
+                this.worker.addEventListener('message', this.handleWorkerMessage);
+
+                this.$refs.imageContainer.addEventListener('mousedown', e => {
+                    if (e.button !== 0 && e.button !== 2) {
+                        return;
+                    }
+                    if (!this.isEncoded) {
+                        return;
+                    }
+                    if (!this.isMultiMaskMode) {
+                        this.lastPoints = [];
+                        this.isMultiMaskMode = true;
+                        this.isCutMaskDisabled = false;
+                    }
+
+                    const point = this.getPoint(e);
+                    this.lastPoints.push(point);
+                    this.addIcon(point);
+                    this.decode();
+                });
+
+                this.$refs.imageContainer.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                });
+
+                this.$refs.imageContainer.addEventListener('mousemove', e => {
+                    if (!this.isEncoded || this.isMultiMaskMode) {
+                        return;
+                    }
+                    this.lastPoints = [this.getPoint(e)];
+                    if (!this.isDecoding) {
+                        this.decode();
+                    }
+                });
+
+                this.$refs.clearButton.addEventListener('click', this.clearPointsAndMask);
+                this.$refs.resetButton.addEventListener('click', this.resetImage);
+            },
+
+            beforeDestroy() {
+                this.worker.terminate();
+            },
+
+
+            methods: {
+                resetImage() {
+                    this.isEncoded = false;
+                    this.imageDataURI = null;
+                    this.worker.postMessage({ type: 'reset' });
+                    this.clearPointsAndMask();
+                    this.isCutMaskDisabled = true;
+                    this.$refs.imageContainer.style.backgroundImage = 'none';
+                    this.$refs.uploadButton.style.display = 'flex';
+                    this.$refs.statusLabel.textContent = 'Ready';
+                },
+                clearPoints() {
+                    this.clearPointsAndMask();
+                },
+                cutMask() {
+                    const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
+                    const maskContext = this.$refs.maskCanvas.getContext('2d');
+                    const maskPixelData = maskContext.getImageData(0, 0, w, h);
+
+                    const image = new Image();
+                    image.crossOrigin = 'anonymous';
+                    image.onload = async () => {
+                        const imageCanvas = new OffscreenCanvas(w, h);
+                        const imageContext = imageCanvas.getContext('2d');
+                        imageContext.drawImage(image, 0, 0, w, h);
+                        const imagePixelData = imageContext.getImageData(0, 0, w, h);
+
+                        const cutCanvas = new OffscreenCanvas(w, h);
+                        const cutContext = cutCanvas.getContext('2d');
+                        const cutPixelData = cutContext.getImageData(0, 0, w, h);
+
+                        for (let i = 3; i < maskPixelData.data.length; i += 4) {
+                            if (maskPixelData.data[i] > 0) {
+                                for (let j = 0; j < 4; ++j) {
+                                    const offset = i - j;
+                                    cutPixelData.data[offset] = imagePixelData.data[offset];
+                                }
+                            }
+                        }
+                        cutContext.putImageData(cutPixelData, 0, 0);
+
+                        const link = document.createElement('a');
+                        link.download = 'image.png';
+                        link.href = URL.createObjectURL(await cutCanvas.convertToBlob());
+                        link.click();
+                        link.remove();
+                    };
+                    image.src = this.imageDataURI;
+                },
+                handleUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) {
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = e => this.segment(e.target.result);
+                    reader.readAsDataURL(file);
+                },
+                useExample(event) {
+                    event.preventDefault();
+                    this.segment(EXAMPLE_URL);
+                },
+                addIcon({ point, label }) {
+                    const icon = (label === 1 ? this.star : this.cross).cloneNode();
+                    icon.style.left = `${point[0] * 100}%`;
+                    icon.style.top = `${point[1] * 100}%`;
+                    this.$refs.imageContainer.appendChild(icon);
+                },
+                getPoint(e) {
+                    const bb = this.$refs.imageContainer.getBoundingClientRect();
+                    const mouseX = this.clamp((e.clientX - bb.left) / bb.width);
+                    const mouseY = this.clamp((e.clientY - bb.top) / bb.height);
+
+                    return {
+                        point: [mouseX, mouseY],
+                        label: e.button === 2 ? 0 : 1,
+                    };
+                },
+                clamp(x, min = 0, max = 1) {
+                    return Math.max(Math.min(x, max), min);
+                },
+                segment(data) {
+                    if (!this.worker) {
+                        console.error('Worker is not initialized');
+                        return;
+                    }
+                    this.isEncoded = false;
+                    if (!this.modelReady) {
+                        this.$refs.statusLabel.textContent = 'Loading model...';
+                    }
+                    this.imageDataURI = data;
+                    this.$refs.imageContainer.style.backgroundImage = `url(${data})`;
+                    this.$refs.uploadButton.style.display = 'none';
+                    this.isCutMaskDisabled = true;
+                    this.worker.postMessage({ type: 'segment', data });
+                },
+                decode() {
+                    this.isDecoding = true;
+                    this.worker.postMessage({ type: 'decode', data: this.lastPoints });
+                },
+                clearPointsAndMask() {
+                    this.isMultiMaskMode = false;
+                    this.lastPoints = null;
+                    document.querySelectorAll('.icon').forEach(e => e.remove());
+                    this.isCutMaskDisabled = true;
+                    this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, this.$refs.maskCanvas.width, this.$refs.maskCanvas.height);
+                },
+
+                handleWorkerMessage(e) {
+                    const { type, data } = e.data;
+                    if (type === 'ready') {
+                        this.modelReady = true;
+                        this.$refs.statusLabel.textContent = 'Ready';
+                    } else if (type === 'decode_result') {
+                        this.isDecoding = false;
+                        if (!this.isEncoded) {
+                            return;
+                        }
+                        if (!this.isMultiMaskMode && this.lastPoints) {
+                            this.decode();
+                            this.lastPoints = null;
+                        }
+                        const { mask, scores } = data;
+                        if (this.$refs.maskCanvas.width !== mask.width || this.$refs.maskCanvas.height !== mask.height) {
+                            this.$refs.maskCanvas.width = mask.width;
+                            this.$refs.maskCanvas.height = mask.height;
+                        }
+                        const context = this.$refs.maskCanvas.getContext('2d');
+                        const imageData = context.createImageData(this.$refs.maskCanvas.width, this.$refs.maskCanvas.height);
+                        const numMasks = scores.length;
+                        let bestIndex = 0;
+                        for (let i = 1; i < numMasks; ++i) {
+                            if (scores[i] > scores[bestIndex]) {
+                                bestIndex = i;
+                            }
+                        }
+                        this.$refs.statusLabel.textContent = `Segment score: ${scores[bestIndex].toFixed(2)}`;
+                        const pixelData = imageData.data;
+                        for (let i = 0; i < pixelData.length; ++i) {
+                            if (mask.data[numMasks * i + bestIndex] === 1) {
+                                const offset = 4 * i;
+                                pixelData[offset] = 0;
+                                pixelData[offset + 1] = 114;
+                                pixelData[offset + 2] = 189;
+                                pixelData[offset + 3] = 255;
+                            }
+                        }
+                        context.putImageData(imageData, 0, 0);
+                    } else if (type === 'segment_result') {
+                        if (data === 'start') {
+                            this.$refs.statusLabel.textContent = 'Extracting image embedding...';
+                        } else {
+                            this.$refs.statusLabel.textContent = 'Embedding extracted!';
+                            this.isEncoded = true;
+                        }
+                    }
+                },
+            },
+        });
+
+        // Initialize Vue instance
+        new Vue({
+            el: '#app',
+        });
+    </script>
 </body>
 
 </html>
