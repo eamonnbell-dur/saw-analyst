@@ -20,7 +20,7 @@
             template: `
             <div>
             <h2>saw-analyst</h2>
-            <div id="container" ref="imageContainer">
+            <div id="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer" @contextmenu.prevent>
                 <label id="upload-button" for="upload" ref="uploadButton">
                 Click to upload image
                 <label id="example" @click="useExample">(or try example)</label>
@@ -30,7 +30,7 @@
             <label id="status" ref="statusLabel"></label>
             <div id="controls">
                 <button @click="resetImage" ref="resetButton">Reset image</button>
-                <button @click="clearPoints" ref="clearButton">Clear points</button>
+                <button @click="clearPointsAndMask" ref="clearButton">Clear points</button>
                 <button @click="cutMask" :disabled="isCutMaskDisabled">Cut mask</button>
             </div>
             <p id="information">
@@ -52,6 +52,7 @@
                 };
             },
             mounted() {
+
                 const BASE_URL = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/';
 
                 this.star = new Image();
@@ -65,41 +66,6 @@
                 this.worker = new Worker('worker.js', { type: 'module' });
                 this.worker.addEventListener('message', this.handleWorkerMessage);
 
-                this.$refs.imageContainer.addEventListener('mousedown', e => {
-                    if (e.button !== 0 && e.button !== 2) {
-                        return;
-                    }
-                    if (!this.isEncoded) {
-                        return;
-                    }
-                    if (!this.isMultiMaskMode) {
-                        this.lastPoints = [];
-                        this.isMultiMaskMode = true;
-                        this.isCutMaskDisabled = false;
-                    }
-
-                    const point = this.getPoint(e);
-                    this.lastPoints.push(point);
-                    this.addIcon(point);
-                    this.decode();
-                });
-
-                this.$refs.imageContainer.addEventListener('contextmenu', e => {
-                    e.preventDefault();
-                });
-
-                this.$refs.imageContainer.addEventListener('mousemove', e => {
-                    if (!this.isEncoded || this.isMultiMaskMode) {
-                        return;
-                    }
-                    this.lastPoints = [this.getPoint(e)];
-                    if (!this.isDecoding) {
-                        this.decode();
-                    }
-                });
-
-                this.$refs.clearButton.addEventListener('click', this.clearPointsAndMask);
-                this.$refs.resetButton.addEventListener('click', this.resetImage);
             },
 
             beforeDestroy() {
@@ -117,9 +83,6 @@
                     this.$refs.imageContainer.style.backgroundImage = 'none';
                     this.$refs.uploadButton.style.display = 'flex';
                     this.$refs.statusLabel.textContent = 'Ready';
-                },
-                clearPoints() {
-                    this.clearPointsAndMask();
                 },
                 cutMask() {
                     const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
@@ -214,6 +177,35 @@
                     document.querySelectorAll('.icon').forEach(e => e.remove());
                     this.isCutMaskDisabled = true;
                     this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, this.$refs.maskCanvas.width, this.$refs.maskCanvas.height);
+                },
+
+                handleMouseDown(e) {
+                    if (e.button !== 0 && e.button !== 2) {
+                        return;
+                    }
+                    if (!this.isEncoded) {
+                        return;
+                    }
+                    if (!this.isMultiMaskMode) {
+                        this.lastPoints = [];
+                        this.isMultiMaskMode = true;
+                        this.isCutMaskDisabled = false;
+                    }
+
+                    const point = this.getPoint(e);
+                    this.lastPoints.push(point);
+                    this.addIcon(point);
+                    this.decode();
+                },
+
+                handleMouseMove(e) {
+                    if (!this.isEncoded || this.isMultiMaskMode) {
+                        return;
+                    }
+                    this.lastPoints = [this.getPoint(e)];
+                    if (!this.isDecoding) {
+                        this.decode();
+                    }
                 },
 
                 handleWorkerMessage(e) {
