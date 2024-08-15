@@ -93,7 +93,7 @@ canvas {
     transform: translate(-50%, -50%);
 }
 
-.controls > button {
+.controls>button {
     padding: 6px 12px;
     background-color: #3498db;
     color: white;
@@ -103,7 +103,7 @@ canvas {
     font-size: 16px;
 }
 
-.controls > button:disabled {
+.controls>button:disabled {
     background-color: #d1d5db;
     color: #6b7280;
     border: 1px solid #9ca3af;
@@ -113,4 +113,56 @@ canvas {
 .information {
     margin-top: 0.25rem;
     font-size: 15px;
+}
+
+
+.relation-stack {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.relation-stack>input {
+    padding: 8px;
+    margin-bottom: 10px;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+}
+
+.relation-stack>button {
+    padding: 8px 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.relation-stack>.stack {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.word {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.word.active {
+    background-color: #eeffde;
+}
+
+.word:last-child {
+    border-bottom: none;
+}
+
+.delete-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
 }

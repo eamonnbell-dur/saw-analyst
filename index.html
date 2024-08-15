@@ -5,13 +5,15 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="index.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue CDN Example</title>
+    <title>saw-analyst</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
 </head>
 
 <body>
+    <h1>saw-analyst</h1>
     <div id="app">
         <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"></saw-stage>
+        <relation-stack></relation-stack>
         <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:189/full/full/0/default.jpg"></saw-stage>
     </div>
 
@@ -20,7 +22,6 @@
         Vue.component('saw-stage', {
             template: `
             <div class="saw-analyst">
-                <h2>saw-analyst</h2>
                 <div class="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer" @contextmenu.prevent>
                     <label class="upload-button" :for="'upload-' + _uid" ref="uploadButton">
                         Click to upload image
@@ -267,6 +268,53 @@
                     }
                 },
             },
+        });
+
+
+        Vue.component('relation-stack', {
+            template: `
+        <div class="relation-stack">
+          <input v-model="newWord" @keyup.enter="addWord" placeholder="Enter a word" />
+          <button @click="addWord">Add relation</button>
+          <div class="stack">
+            <div 
+              v-for="(word, index) in words" 
+              :key="index" 
+              :class="['word', { active: index === activeIndex }]" 
+              @click="setActive(index)"
+            >
+              {{ word }}
+              <button class="delete-button" @click.stop="deleteWord(index)">⌫</button>
+            </div>
+          </div>
+        </div>
+      `,
+            data() {
+                return {
+                    newWord: '',
+                    words: [],
+                    activeIndex: null,
+                };
+            },
+            methods: {
+                addWord() {
+                    if (this.newWord.trim() !== '') {
+                        this.words.push(this.newWord.trim());
+                        this.newWord = '';
+                    }
+                },
+                deleteWord(index) {
+                    this.words.splice(index, 1);
+                    if (this.activeIndex === index) {
+                        this.activeIndex = null;
+                    } else if (this.activeIndex > index) {
+                        this.activeIndex--;
+                    }
+                },
+                setActive(index) {
+                    this.activeIndex = index;
+                }
+            }
         });
 
         // Initialize Vue instance
