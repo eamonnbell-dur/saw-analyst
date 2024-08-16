@@ -12,9 +12,7 @@
 <body>
     <h1>saw-analyst</h1>
     <div id="app">
-        <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"></saw-stage>
-        <relation-stack></relation-stack>
-        <saw-stage example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:189/full/full/0/default.jpg"></saw-stage>
+        <saw-analyst></saw-analyst>
     </div>
 
     <script>
@@ -34,11 +32,12 @@
                     <button @click="resetImage" ref="resetButton">Reset image</button>
                     <button @click="clearPointsAndMask" ref="clearButton">Clear points</button>
                     <button @click="cutMask" :disabled="isCutMaskDisabled">Cut mask</button>
+                    <button @click="confirmMask" :disabled="isCutMaskDisabled">Confirm mask</button>
                 </div>
                 <p class="information">
                     Left click = positive points, right click = negative points.
                 </p>
-                <input :id="'upload-' + _uid" type="file" accept="image/*" @change="handleUpload" />
+                <input style="display: none;" :id="'upload-' + _uid" type="file" accept="image/*" @change="handleUpload" />
             </div>
       `,
             props: {
@@ -94,6 +93,14 @@
                     this.$refs.uploadButton.style.display = 'flex';
                     this.$refs.statusLabel.textContent = 'Ready';
                 },
+
+                confirmMask(){
+                    const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
+                    const maskContext = this.$refs.maskCanvas.getContext('2d');
+                    const maskPixelData = maskContext.getImageData(0, 0, w, h);
+                    this.$emit('maskSelected', maskPixelData);
+                },
+
                 cutMask() {
                     const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
                     const maskContext = this.$refs.maskCanvas.getContext('2d');
@@ -139,10 +146,14 @@
                     reader.onload = e => this.segment(e.target.result);
                     reader.readAsDataURL(file);
                 },
+
+
+
                 useExample(event) {
                     event.preventDefault();
                     this.segment(this.exampleUrl);
                 },
+
                 addIcon({ point, label }) {
                     const icon = (label === 1 ? this.star : this.cross).cloneNode();
                     icon.style.left = `${point[0] * 100}%`;
@@ -275,7 +286,7 @@
             template: `
         <div class="relation-stack">
           <input v-model="newWord" @keyup.enter="addWord" placeholder="Enter a word" />
-          <button @click="addWord">Add relation</button>
+          <button @click="addWord">Add word</button>
           <div class="stack">
             <div 
               v-for="(word, index) in words" 
@@ -313,9 +324,55 @@
                 },
                 setActive(index) {
                     this.activeIndex = index;
+                },
+                getActiveRelation() {
+                    return this.words[this.activeIndex];
                 }
             }
         });
+
+        Vue.component('saw-analyst', {
+            template: `
+    <div class="saw-analyst">
+      <saw-stage ref="originStage" example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg" @maskSelected="handleMaskSelected('origin', $event)"></saw-stage>
+      <relation-stack ref="relationStack"></relation-stack>
+      <button @click="addRelation">Add Relation</button>
+      <saw-stage ref="destinationStage" example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg" @maskSelected="handleMaskSelected('destination', $event)"></saw-stage>
+    </div>
+  `,
+            data() {
+                return {
+                    originMask: null,
+                    destinationMask: null,
+                    relations: []
+                };
+            },
+            methods: {
+                handleMaskSelected(type, mask) {
+                    console.log({type, mask});
+                    if (type === 'origin') {
+                        this.originMask = mask;
+                    } else if (type === 'destination') {
+                        this.destinationMask = mask;
+                    }
+                },
+                addRelation() {
+                    const activeRelation = this.$refs.relationStack.getActiveRelation();
+                    if (this.originMask && this.destinationMask && activeRelation) {
+                        const relation = {
+                            origin: this.originMask,
+                            destination: this.destinationMask,
+                            relationName: activeRelation
+                        };
+                        console.log(relation);
+                        this.relations.push(relation);
+                        this.originMask = null;
+                        this.destinationMask = null;
+                    }
+                }
+            }
+        });
+
 
         // Initialize Vue instance
         new Vue({

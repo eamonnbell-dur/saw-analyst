@@ -122,6 +122,10 @@ canvas {
     text-align: center;
 }
 
+.saw-analyst {
+    text-align: center;
+}
+
 .relation-stack>input {
     padding: 8px;
     margin-bottom: 10px;
@@ -130,6 +134,12 @@ canvas {
 }
 
 .relation-stack>button {
+    padding: 8px 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.saw-analyst >button {
     padding: 8px 16px;
     margin-bottom: 20px;
     cursor: pointer;
@@ -151,7 +161,7 @@ canvas {
 }
 
 .word.active {
-    background-color: #eeffde;
+    background-color: #caddb8;
 }
 
 .word:last-child {
