@@ -115,46 +115,6 @@ canvas {
     font-size: 15px;
 }
 
-
-.relation-stack {
-    max-width: 400px;
-    margin: 0 auto;
-    text-align: center;
-}
-
-.saw-analyst {
-    display: flex;
-}
-
-.saw-stage {
-    text-align: center;
-}
-
-.saw-stage >button {
-    padding: 8px 16px;
-    margin-bottom: 20px;
-    cursor: pointer;
-}
-
-.relation-stack>input {
-    padding: 8px;
-    margin-bottom: 10px;
-    width: calc(100% - 16px);
-    box-sizing: border-box;
-}
-
-.relation-stack>button {
-    padding: 8px 16px;
-    margin-bottom: 20px;
-    cursor: pointer;
-}
-
-.relation-stack>.stack {
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-}
-
 .word {
     display: flex;
     justify-content: space-between;
