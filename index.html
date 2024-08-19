@@ -19,7 +19,7 @@
         // Define your component
         Vue.component('saw-stage', {
             template: `
-            <div class="saw-analyst">
+            <div class="saw-stage">
                 <div class="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer" @contextmenu.prevent>
                     <label class="upload-button" :for="'upload-' + _uid" ref="uploadButton">
                         Click to upload image
@@ -94,7 +94,7 @@
                     this.$refs.statusLabel.textContent = 'Ready';
                 },
 
-                confirmMask(){
+                confirmMask() {
                     const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
                     const maskContext = this.$refs.maskCanvas.getContext('2d');
                     const maskPixelData = maskContext.getImageData(0, 0, w, h);
@@ -192,6 +192,7 @@
                     this.isDecoding = true;
                     this.worker.postMessage({ type: 'decode', data: this.lastPoints });
                 },
+                
                 clearPointsAndMask() {
                     this.isMultiMaskMode = false;
                     this.lastPoints = null;
@@ -297,6 +298,9 @@
               {{ word }}
               <button class="delete-button" @click.stop="deleteWord(index)">⌫</button>
             </div>
+            <div>
+                <slot :emitAddRelation="emitAddRelation"></slot>
+            </div>
           </div>
         </div>
       `,
@@ -327,6 +331,9 @@
                 },
                 getActiveRelation() {
                     return this.words[this.activeIndex];
+                },
+                emitAddRelation() {
+                    return this.$emit('add-relation');
                 }
             }
         });
@@ -335,8 +342,11 @@
             template: `
     <div class="saw-analyst">
       <saw-stage ref="originStage" example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg" @maskSelected="handleMaskSelected('origin', $event)"></saw-stage>
-      <relation-stack ref="relationStack"></relation-stack>
-      <button @click="addRelation">Add Relation</button>
+      <relation-stack ref="relationStack">
+        <template v-slot:default="{ emitAddRelation }">
+            <button @click="emitAddRelation">Add Relation</button>
+        </template>
+      </relation-stack>
       <saw-stage ref="destinationStage" example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg" @maskSelected="handleMaskSelected('destination', $event)"></saw-stage>
     </div>
   `,
@@ -349,7 +359,7 @@
             },
             methods: {
                 handleMaskSelected(type, mask) {
-                    console.log({type, mask});
+                    console.log({ type, mask });
                     if (type === 'origin') {
                         this.originMask = mask;
                     } else if (type === 'destination') {
