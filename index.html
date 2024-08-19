@@ -93,14 +93,12 @@
                     this.$refs.uploadButton.style.display = 'flex';
                     this.$refs.statusLabel.textContent = 'Ready';
                 },
-
                 confirmMask() {
                     const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
                     const maskContext = this.$refs.maskCanvas.getContext('2d');
                     const maskPixelData = maskContext.getImageData(0, 0, w, h);
                     this.$emit('maskSelected', maskPixelData);
                 },
-
                 cutMask() {
                     const [w, h] = [this.$refs.maskCanvas.width, this.$refs.maskCanvas.height];
                     const maskContext = this.$refs.maskCanvas.getContext('2d');
@@ -146,9 +144,44 @@
                     reader.onload = e => this.segment(e.target.result);
                     reader.readAsDataURL(file);
                 },
+                segment(data) {
+                    if (!this.worker) {
+                        console.error('Worker is not initialized');
+                        return;
+                    }
+                    this.isEncoded = false;
+                    if (!this.modelReady) {
+                        this.$refs.statusLabel.textContent = 'Loading model...';
+                    }
+                    this.imageDataURI = data;
 
+                    const img = new Image();
 
+                    img.onload = () => {
+                        this.adjustCanvasSize(img);
+                        this.$refs.imageContainer.style.backgroundImage = `url(${data})`;
+                        this.$refs.uploadButton.style.display = 'none';
+                        this.isCutMaskDisabled = true;
+                        this.worker.postMessage({ type: 'segment', data });
+                    }
 
+                    img.src = data;
+
+                },
+
+                adjustCanvasSize(img) {
+                    const container = this.$refs.imageContainer;
+                    const canvas = this.$refs.maskCanvas;
+                    const aspectRatio = img.width / img.height;
+
+                    // Adjust container size
+                    container.style.width = '100%';
+                    container.style.height = `${container.clientWidth / aspectRatio}px`;
+
+                    // Adjust canvas size
+                    canvas.width = container.clientWidth;
+                    canvas.height = container.clientHeight;
+                },
                 useExample(event) {
                     event.preventDefault();
                     this.segment(this.exampleUrl);
@@ -173,26 +206,12 @@
                 clamp(x, min = 0, max = 1) {
                     return Math.max(Math.min(x, max), min);
                 },
-                segment(data) {
-                    if (!this.worker) {
-                        console.error('Worker is not initialized');
-                        return;
-                    }
-                    this.isEncoded = false;
-                    if (!this.modelReady) {
-                        this.$refs.statusLabel.textContent = 'Loading model...';
-                    }
-                    this.imageDataURI = data;
-                    this.$refs.imageContainer.style.backgroundImage = `url(${data})`;
-                    this.$refs.uploadButton.style.display = 'none';
-                    this.isCutMaskDisabled = true;
-                    this.worker.postMessage({ type: 'segment', data });
-                },
+
                 decode() {
                     this.isDecoding = true;
                     this.worker.postMessage({ type: 'decode', data: this.lastPoints });
                 },
-                
+
                 clearPointsAndMask() {
                     this.isMultiMaskMode = false;
                     this.lastPoints = null;
