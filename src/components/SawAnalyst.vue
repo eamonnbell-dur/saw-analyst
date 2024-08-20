@@ -2,6 +2,7 @@
     <div class="saw-analyst">
         <SawStage ref="originStage"
             example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"
+            id="1"
             @maskSelected="handleMaskSelected('origin', $event)"></SawStage>
         <RelationStack ref="relationStack">
             <template v-slot:default="{ emitAddRelation }">
@@ -10,6 +11,7 @@
         </RelationStack>
         <SawStage ref="destinationStage"
             example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"
+            id="2"
             @maskSelected="handleMaskSelected('destination', $event)"></SawStage>
     </div>
 </template>
