@@ -295,6 +295,13 @@ export default {
 </script>
 
 <style scoped>
+canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+
 .saw-stage {
     text-align: center;
 }
@@ -303,5 +310,77 @@ export default {
     padding: 8px 16px;
     margin-bottom: 20px;
     cursor: pointer;
+}
+
+.example {
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.example:hover {
+    color: #2563EB;
+}
+
+.status {
+    min-height: 16px;
+    margin: 8px 0;
+}
+
+
+.controls>button {
+    padding: 6px 12px;
+    background-color: #3498db;
+    color: white;
+    border: 1px solid #2980b9;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.controls>button:disabled {
+    background-color: #d1d5db;
+    color: #6b7280;
+    border: 1px solid #9ca3af;
+    cursor: not-allowed;
+}
+
+.information {
+    margin-top: 0.25rem;
+    font-size: 15px;
+}
+
+
+.mask-output {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.upload-button {
+    gap: 0.4rem;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.upload {
+    display: none;
+}
+
+.container {
+    position: relative;
+    width: 640px;
+    height: 420px;
+    max-width: 100%;
+    max-height: 100%;
+    border: 2px dashed #D1D5DB;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+    margin-top: 1rem;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div class="saw-analyst">
+    <div id="saw-analyst">
         <SawStage ref="originStage"
             example-url="https://cdm21066.contentdm.oclc.org/iiif/2/BDC:315/full/full/0/default.jpg"
             id="1"
@@ -61,4 +61,14 @@ export default {
 </script>
 
 <style scoped>
+div#saw-analyst {
+    display: flex;
+    flex-direction: row;
+}
+
+button {
+    padding: 8px 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
 </style>
