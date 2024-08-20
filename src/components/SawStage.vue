@@ -2,7 +2,7 @@
     <div class="saw-stage">
         <div class="container" @mousedown="handleMouseDown" @mousemove="handleMouseMove" ref="imageContainer"
             @contextmenu.prevent>
-            <label class="upload-button" :for="'upload-' + _uid" ref="uploadButton">
+            <label class="upload-button" :for="`input-${id}`" ref="uploadButton">
                 Click to upload image
                 <label class="example" @click="useExample">(or try example)</label>
             </label>
@@ -18,7 +18,7 @@
         <p class="information">
             Left click = positive points, right click = negative points.
         </p>
-        <input style="display: none;" :id="'upload-' + _uid" type="file" accept="image/*" @change="handleUpload" />
+        <input style="display: none;" :id="`input-${id}`" type="file" accept="image/*" @change="handleUpload" />
     </div>
 </template>
 
@@ -29,6 +29,10 @@ export default {
         exampleUrl: {
             type: String,
             required: false
+        },
+        id: {
+            type: [String, Number],
+            required: true
         }
     },
     data() {
@@ -36,7 +40,6 @@ export default {
             isCutMaskDisabled: true,
             isEncoded: false,
             isMultiMaskMode: false,
-            lastPoints: [],
             modelReady: false,
             isDecoding: false,
             imageDataURI: '',
@@ -55,6 +58,8 @@ export default {
         this.cross = new Image();
         this.cross.src = BASE_URL + 'cross-icon.png';
         this.cross.className = 'icon';
+
+        this.lastPoints = [];
 
         this.worker = new Worker('worker.js', { type: 'module' });
         this.worker.onmessage = this.handleWorkerMessage;
@@ -194,7 +199,8 @@ export default {
 
         decode() {
             this.isDecoding = true;
-            this.worker.postMessage({ type: 'decode', data: this.lastPoints });
+            const message = { type: 'decode', data: this.lastPoints };
+            this.worker.postMessage(message);
         },
 
         clearPointsAndMask() {
